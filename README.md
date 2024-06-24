@@ -6,6 +6,7 @@ This is [year 5](https://binary.golf/5/), and the goal is:
 ```
 Create the smallest file that downloads [this](https://binary.golf/5/5) text file and displays its contents.
 ```
+(The `this` part is really [https://binary.golf/5/5](https://binary.golf/5/5)).
 
 There are some interesting clarifying questions that were kind of answered:
 - It's okay to rely on external dependencies of the OS.
