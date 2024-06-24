@@ -1,4 +1,4 @@
-# Linux shellcoding ideas for Binary Golfing
+# Binary Golf 5 - Linux shellcoding ideas
 It is June 2024, and [Binary Golf](https://binary.golf/) season is upon us!  
 For the uninitiated - the idea of Binary Golf is to create the shortest program\script\whatever that does *some task*, where the task changes each time.  
 This is [year 5](https://binary.golf/5/), and the goal is:
