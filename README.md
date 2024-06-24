@@ -117,7 +117,7 @@ def get_system_pattern_with_offset():
 
 So, my shellcode is quite simple, even though I saw one issue when calling `libc!system` - it saves MMX registers on the stack, which means we have to keep the stack 16-bytes aligned! Therefore:
 1. My shellcode will align the stack to 16-bytes.
-2. My shellcode will initialize `RSI` and look for the unique pattern (saved in `ECX`) between `xbegin` and `xend` - bad memory access will roll to the *relative* address mentioned in `xbegin`, which suits shellcodes well.
+2. My shellcode will initialize `RSI` and look for the unique pattern (saved in `ECX`) between `xbegin` and `xend` - bad memory access will roll to the *relative* address mentioned in `xbegin`, which suits shellcodes well. Note that since Intel is [Little Endian](https://en.wikipedia.org/wiki/Endianness) the `ECX` value is `0xe90774ff`.
 3. Once pattern is found - use the offset to point `RSI` to `libc!system`.
 4. Prepare the sole argument in `RDI` by using `call-pop`.
 
@@ -162,9 +162,25 @@ jmp $
 ```
 
 The terms didn't mention whether the program should exist or not - for all means and purposes I could've let it crash, but I've decided to hang forver using `jmp $`.  
-With that, I got a shellcode of `72 bytes`.
+With that, I got a shellcode of `72 bytes`.  
+Also, apparently `gdb` does not like debugging `TSX` - even doing `si` on `xbegin` sometimes acts as if we're doing an entire transaction iteration!  
+Lastly, this takes *a lot of time* to run (like 15 minutes on a modern PC) due to exhausing the entire memory space (but we increase by `0x1000` which should be okay).  
+one optimization we could've done is using the `cmpsd` or `scasd`, but it'd be even slower (since we move byte-by-byte) and only save `4` bytes in total (taking `cld` instruction into account).
 
-###
+### Shellcoding with syscall
+On Linux, one can simply use the `syscall` numbers freely, which makes shellcoding much easier on Linux (I've already talked about Windows shellcoding [here](https://github.com/yo-yo-yo-jbo/msf_shellcode_analysis/)).  
+Well, the [execve](https://man7.org/linux/man-pages/man2/execve.2.html) syscall is just around the corner! But we need to prepare `argv` for it:
 
+```c
+int execve(const char *pathname, char *const _Nullable argv[], char *const _Nullable envp[]);
+```
+
+The good news:
+1. No need to locate anything in memory - the `execve` syscall number is well known (`59`).
+2. No need to hang the program - `execve` shouldn't return in case of success.
+
+The bad news:
+1. `execve` should have the `pathname` be an absolute path - writing `curl` doesn't help - we need `/bin/curl`.
+2. Preparing `argv` is necessary and means pointing to an array of pointers (since strings are pointers too).
 
 
