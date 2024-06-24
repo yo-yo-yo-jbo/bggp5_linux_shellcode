@@ -4,13 +4,14 @@ For the uninitiated - the idea of Binary Golf is to create the shortest program\
 This is [year 5](https://binary.golf/5/), and the goal is:
 
 ```
-Create the smallest file that downloads [this](https://binary.golf/5/5) text file and displays its contents.
+Create the smallest file that downloads this text file and displays its contents.
 ```
 (The `this` part is really [https://binary.golf/5/5](https://binary.golf/5/5)).
 
 There are some interesting clarifying questions that were kind of answered:
 - It's okay to rely on external dependencies of the OS.
 - Environment variables or commandline arguments are okay, although they might be in different categories.
+- The term "download" means download to memory also - you do not have to touch disk.
 
 ## Preliminary thoughts
 Some ideas that come to mind:
