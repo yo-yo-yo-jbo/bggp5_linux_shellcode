@@ -227,7 +227,7 @@ I think this is self-explanatory - the only "complicated" part is preparing `arg
 The x64 calling convernsion is:
 - First argument is `rdi` which should point to the string `/bin/curl`.
 - Second argument is `rsi` which points to our `argv`, which is composed to four pointers to the following: `{ "/bin/curl", "-L", "7f.uk", NULL }`.
-- Third argument is `rdx` which points to `envp`. We set it to be `NULL` by self-xoring RDX.
+- Third argument is `rdx` which points to `envp`. We set it to be `NULL` using the `cdq` trick.
 
 The few minor tricks besides that:
 1. I first set the `execve` syscall number in `rax`. I do that not only to make `rax` hold the syscall number, but also to prepare for the next instruction (`cdq`).
