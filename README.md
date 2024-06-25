@@ -182,7 +182,7 @@ The bad news:
 1. `execve` should have the `pathname` be an absolute path - writing `curl` doesn't help - we need `/bin/curl`.
 2. Preparing `argv` is necessary and means pointing to an array of pointers (since strings are pointers too).
 
-Here's what I got with only `48` bytes:
+Here's what I got with only `46` bytes:
 
 ```assembly
 [BITS 64]
@@ -203,8 +203,12 @@ after_argv:
         ; Save argv pointer
         pop rdi
 
-        ; Set envp
-        xor rdx, rdx
+        ; Set the syscall number into RAX
+        push EXECVE_SYSCALL_NUM
+        pop rax
+
+        ; Set envp (from RAX to RDX)
+        cdq
 
         ; Prepare argv in stack
         push rdx
@@ -215,10 +219,6 @@ after_argv:
         push rdi        ; At this point RDI also points to main executable
         mov rsi, rsp
 
-        ; Set the syscall number into RAX
-        push EXECVE_SYSCALL_NUM
-        pop rax
-
         ; Call execve
         syscall
 ```
@@ -228,6 +228,10 @@ The x64 calling convernsion is:
 - First argument is `rdi` which should point to the string `/bin/curl`.
 - Second argument is `rsi` which points to our `argv`, which is composed to four pointers to the following: `{ "/bin/curl", "-L", "7f.uk", NULL }`.
 - Third argument is `rdx` which points to `envp`. We set it to be `NULL` by self-xoring RDX.
+
+The few minor tricks besides that:
+1. I first set the `execve` syscall number in `rax`. I do that not only to make `rax` hold the syscall number, but also to prepare for the next instruction (`cdq`).
+2. I use `cdq` to make `rdx` zero with less bytes - it sign extends `rax` to `rdx`.
 
 ### Running the shellcode
 For completeness, here's C code that runs an arbitrary shellcode:
