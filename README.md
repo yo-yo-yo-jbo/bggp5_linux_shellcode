@@ -164,7 +164,7 @@ The terms didn't mention whether the program should exist or not - for all means
 With that, I got a shellcode of `62 bytes`.  
 Also, apparently `gdb` does not like debugging `TSX` - even doing `si` on `xbegin` sometimes acts as if we're doing an entire transaction iteration!  
 Lastly, this takes *a lot of time* to run (like 15 minutes on a modern PC) due to exhausing the entire memory space (but we increase by `0x1000` which should be okay).  
-one optimization we could've done is using the `cmpsd` or `scasd`, but it'd be even slower (since we move byte-by-byte) and only save `4` bytes in total (taking `cld` instruction into account).
+One optimization we could've done is using the `cmpsd` or `scasd`, but it'd be even slower (since we move byte-by-byte) and only save `4` bytes in total (taking `cld` instruction into account).
 
 ### Shellcoding with syscall
 On Linux, one can simply use the `syscall` numbers freely, which makes shellcoding much easier on Linux (I've already talked about Windows shellcoding [here](https://github.com/yo-yo-yo-jbo/msf_shellcode_analysis/)).  
