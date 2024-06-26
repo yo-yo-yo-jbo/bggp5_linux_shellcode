@@ -351,9 +351,104 @@ for i in legals:
     f(i)
 ```
 
-I got the following results:
-- 
+Besides illegal instructions, I got the following results:
+- `push` and `pop` instructions that either work on registers or immidiate values. If I aim at only using one character for the variable name, they do not work well since my next character is `=`.
+- `imul` instructions that land in middle of instructions (destructively).
+- `in` and `out` instructions that that aren't allowed in userland.
+- `or`, `and`, `xor` and `cmp` instructions that address memory - which is problematic since I do not want to assume anything about the memory (we're coding a shellcode).
+- Conditional branches such as `je`, `jne`, `jb` and so on.
 
+The conditional branches work well but I cannot rely on the state of the flags when executed. I therefore decided that I would allocate `2` bytes to the variable name, followed by an equal sign.  
+Well, I was able to find the following:
+
+```assembly
+    Z        52        push rdx
+    4=       34 3D     xor al, 0x3d
+```
+
+Well, that's awesome! How do we continue? Some thoughts:
+1. We use the same `call` instruction followed by the strings we wish to use.
+2. After the `call` we use a `;`, to seperate the variable assignment in the shell script, followed by the `curl` commandline. This will also come in handy since that is the syscall number to `execve`.
+3. The `curl` commandline will include the full path to `curl` for later `execve` use, and will have to include whitespaces for argument separation. This means we have to patch our shellcode in-place to reuse those strings for `argv` - changing those whitespaces to `NUL` terminators. This also means the arguments appear in the right order (as opposed to the pure shellcode version that had them in reverse order).
+4. We can use commands such as `stosb` and `lodsb` to manipulate memory and the `AL` register. We want to use `stosb` first to replace the commandline whitespaces with zeros, which means we need to zero `al` as well as the direction flag (since `lodsb` and `stosb` change the memory-pointer register, which we can use to our advantage).
+
+After some tinkering, I can up with this:
+
+```assembly
+[BITS 64]
+
+; Constants
+EXECVE_SYSCALL_NUM EQU 0x3B
+
+        ; Make a dummy variable for bash
+        db 'R4='                        ; Interpreted as PUSH RDX; XOR AL, 0x3D
+
+        ; Jump over argv
+        call after_argv
+
+        ; It just so happens the execve syscall number is ';' which is great for shell scripting
+        db EXECVE_SYSCALL_NUM EQU
+
+        ; argv and also commandline for bash
+        db `/bin/curl -L 7f.uk\n`
+
+        ; Exiting bash
+        db `exit\n`
+
+after_argv:
+
+        ; Get the address that points to the execve syscall number
+        pop rdi
+        mov rsi, rdi
+
+        ; Zero-out RAX and set envp by means of CDQ instruction onto RDX
+        xor rax, rax
+        cdq
+
+        ; Push the last NULL argument - argv[3]
+        push rdx
+
+        ; Replace \n and two spaces with \0 and prepare argv in stack in reverse order
+        ; We work with RDI due to stosb instructions which will also increase after each store instruction
+        cld
+        add rdi, 19
+        stosb
+        sub rdi, 7
+        stosb
+        push rdi                ; argv[2]
+        sub rdi, 4
+        stosb
+        push rdi                ; argv[1]
+
+        ; Get the execve syscall number onto AL
+        lodsb
+
+        ; Push argv[0] - RSI increased after load instruction
+        push rsi
+
+        ; Make RDI point to main executable and RSI point to argv
+        mov rdi, rsi
+        mov rsi, rsp
+
+        ; Call execve
+        syscall
+```
+
+The entire shellcode is `70` bytes long and works as a shell script too:
+
+```shell
+jbo@jbo-nix:~/projects/golf/shellcode$ make
+gcc    -c -o shellcode_runner.o shellcode_runner.c
+gcc shellcode_runner.o -o shellcode_runner
+nasm -f bin -o shellcode shellcode.asm
+jbo@jbo-nix:~/projects/golf/shellcode$ ls -l ./shellcode
+-rw-rw-r-- 1 jbo jbo 70 Jun 26 14:11 ./shellcode
+jbo@jbo-nix:~/projects/golf/shellcode$ sh ./shellcode
+Another #BGGP5 download!! @binarygolf https://binary.golf
+jbo@jbo-nix:~/projects/golf/shellcode$ ./shellcode_runner ./shellcode
+Another #BGGP5 download!! @binarygolf https://binary.golf
+jbo@jbo-nix:~/projects/golf/shellcode$
+```
 
 ## Summary
 This year's Binary Golf is fun, albeit a bit too "cheaty" in my opinion - it's easy to "game the system" with external dependencies.  
