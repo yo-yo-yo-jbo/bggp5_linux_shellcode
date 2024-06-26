@@ -320,6 +320,41 @@ cleanup:
 }
 ```
 
+## Creating a polyglot
+For now, I've decided to create a Polyglot of shell script and the Linux shellcode I have.
+The issue is that shells do not treat non-printable characters well - `bash` refuses to run binary files, but `sh` does a bit better as long as we quit before any non-printable characters occur.  
+My plan is therefore to run `sh ./shellcode`, and having the shellcode prefix to be a variable:
+
+```shell
+VARIABLE_NAME=<binary junk>
+curl <url>
+exit
+```
+
+I could work with either newline seperators or the `;` character - and in fact, it just so happens that the syscall number to `execve` is exactly interpreter as `;`. Let us use that!  
+But for now, I need to start with the variable name - legal shell variable names can only contain the underscore `_` symbol, as well as English letters (in either casing) and digits (as long as we do not start with a digit). We can also afford remarks (`#`) and whitespaces.  
+Working by hand is exhausing - I ended up using [Capstone](https://www.capstone-engine.org) to disassemble printable characters and showing me what can be legal and non-destructive x64 assembly:
+
+```python3
+from capstone import *
+
+def f(c):
+    code = c.encode() * 10
+    md = Cs(CS_ARCH_X86, CS_MODE_64)
+    print(f'==={c}===')
+    for i in md.disasm(code, 0x1000):
+        print("0x%x:\t%s\t%s" %(i.address, i.mnemonic, i.op_str))
+
+
+legals = 'abcdefghijklmnopqrstuvwxyz \t\n#ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789'
+for i in legals:
+    f(i)
+```
+
+I got the following results:
+- 
+
+
 ## Summary
 This year's Binary Golf is fun, albeit a bit too "cheaty" in my opinion - it's easy to "game the system" with external dependencies.  
 However, perhaps that's also a nice goal - and that's definitely something that I'd call "a hacker's mindset".  
