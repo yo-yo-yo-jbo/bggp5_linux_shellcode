@@ -362,7 +362,7 @@ The conditional branches work well but I cannot rely on the state of the flags w
 Well, I was able to find the following:
 
 ```assembly
-    Z        52        push rdx
+    R        72        push rdx
     4=       34 3D     xor al, 0x3d
 ```
 
