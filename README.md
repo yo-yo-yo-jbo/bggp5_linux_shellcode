@@ -402,6 +402,7 @@ after_argv:
         mov rsi, rdi
 
         ; Zero-out RAX and set envp by means of CDQ instruction onto RDX
+        ; Note it's enough to zero EAX, saving a REX prefix
         xor eax, eax
         cdq
 
@@ -434,7 +435,7 @@ after_argv:
         syscall
 ```
 
-The entire shellcode is `70` bytes long and works as a shell script too:
+The entire shellcode is `69` bytes long (thanks [Marco Bonelli](https://github.com/mebeim) for the `REX prefix suggestion` and works as a shell script too:
 
 ```shell
 jbo@jbo-nix:~/projects/golf/shellcode$ make
