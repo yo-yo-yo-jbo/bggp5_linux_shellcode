@@ -25,6 +25,7 @@ after_argv:
         mov rsi, rdi
 
         ; Zero-out RAX and set envp by means of CDQ instruction onto RDX
+        ; Note it's enough to zero EAX, saving a REX prefix
         xor eax, eax
         cdq
 
