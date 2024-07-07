@@ -25,7 +25,7 @@ after_argv:
         mov rsi, rdi
 
         ; Zero-out RAX and set envp by means of CDQ instruction onto RDX
-        xor rax, rax
+        xor eax, eax
         cdq
 
         ; Push the last NULL argument - argv[3]
