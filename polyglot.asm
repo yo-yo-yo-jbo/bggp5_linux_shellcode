@@ -4,7 +4,7 @@
 EXECVE_SYSCALL_NUM EQU 0x3B
 
         ; Make a dummy variable for bash
-        db 'R4='                        ; Interpreted as PUSH RDX; XOR AL, 0x3D
+        db 'j='                         ; Interpreted as PUSH 0x3d
 
         ; Jump over argv
         call after_argv
