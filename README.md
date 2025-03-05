@@ -435,7 +435,7 @@ after_argv:
         syscall
 ```
 
-The entire shellcode is `69` bytes long (thanks [Marco Bonelli](https://github.com/mebeim) for the `REX prefix suggestion` and works as a shell script too:
+The entire shellcode is `69` bytes long (thanks [Marco Bonelli](https://github.com/mebeim) for the `REX prefix suggestion`) and works as a shell script too:
 
 ```shell
 jbo@jbo-nix:~/projects/golf/shellcode$ make
