@@ -458,4 +458,4 @@ I might try to have more fun if I have time (`bootloader` or `COM files` are on 
 
 Stay tuned!
 
-Jonathan Bar Or
+Jonathan Bar Or (https://jonathanbaror.com)
